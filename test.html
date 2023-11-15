@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>solo</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        * {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+    <script type="text/javascript">
+        var screenWidth = window.innerWidth;
+        var screenHeight = window.innerHeight;
+        var config = {
+            type: Phaser.AUTO,
+            width: screenWidth,
+            height: screenHeight,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 300 },
+                    debug: true
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        var player
+        var startflag;
+        var platforms;
+        var gameOver = false;
+        var keys;
+        var v = 330;
+        var h = 260;
+        var Left = false;
+        var doublejump = true;
+        var wallride = 100;
+        var flagCollider = true;
+        var playerIsInsideHitbox = false;
+        var respownX = screenWidth / 9, respownY = screenHeight / 1.6;
+        var appearing = true;
+        var Fruits;
+        var score = 0;
+        var background;
+        var background2;
+        var lastbloc;
+        var spike;
+
+
+
+
+
+
+        var game = new Phaser.Game(config);
+
+        function preload() {
+            this.load.image('ground', 'assets/terrain/149_Terrain.png');
+            this.load.image('wall', 'assets/terrain/112_Terrain.png');
+            this.load.image('Padding', 'assets/terrain/111_Terrain.png');
+            this.load.image('wallfin', 'assets/terrain/91_Terrain.png');
+            this.load.image('wallc', 'assets/terrain/134_Terrain.png');
+            this.load.image('sol', 'assets/terrain/01_Terrain.png');
+            this.load.image('herbe', 'assets/terrain/07_Terrain.png');
+            this.load.image('gherbe', 'assets/terrain/06_Terrain.png');
+            this.load.image('dherbe', 'assets/terrain/08_Terrain.png');
+            this.load.image('gterre', 'assets/terrain/28_Terrain.png');
+            this.load.image('terre', 'assets/terrain/29_Terrain.png');
+            this.load.image('dterre', 'assets/terrain/30_Terrain.png');
+            this.load.image('plafon', 'assets/terrain/133_Terrain.png');
+            this.load.image('coin', 'assets/terrain/02_Terrain.png');
+            this.load.image('angle', 'assets/terrain/113_Terrain.png');
+            this.load.image('bloc', 'assets/terrain/34_Terrain.png');
+            this.load.image('back', 'assets/Background/Brown(2).png');
+            this.load.image('spike', 'assets/trap/spike.png');
+            this.load.image('startflag', 'assets/Checkpoints/Start/Start.png');
+            this.load.image('CheckpointNoFlag', 'assets/Checkpoints/Checkpoint/CheckpointNoFlag.png');
+            this.load.spritesheet('Bananas', 'assets/Fruits/Bananas.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('Collected', 'assets/Fruits/Collected.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('Appearing', 'assets/NinjaFrog/Appearing.png', { frameWidth: 96, frameHeight: 96 });
+            this.load.spritesheet('Desappearing', 'assets/NinjaFrog/Desappearing.png', { frameWidth: 96, frameHeight: 96 });
+            this.load.spritesheet('startMouv', 'assets/Checkpoints/Start/StartMouv.png', { frameWidth: 64, frameHeight: 64 });
+            this.load.spritesheet('CheckpointFlagOut', 'assets/Checkpoints/Checkpoint/CheckpointFlagOut.png', { frameWidth: 64, frameHeight: 64 });
+            this.load.spritesheet('CheckpointFlagIdle', 'assets/Checkpoints/Checkpoint/CheckpointFlagIdle.png', { frameWidth: 64, frameHeight: 64 });
+            this.load.spritesheet('idle', 'assets/NinjaFrog/Idle.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('run', 'assets/NinjaFrog/Run.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('runL', 'assets/NinjaFrog/RunL.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('jump', 'assets/NinjaFrog/Jump.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('jumpL', 'assets/NinjaFrog/JumpL.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('fall', 'assets/NinjaFrog/Fall.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('fallL', 'assets/NinjaFrog/FallL.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('idleL', 'assets/NinjaFrog/IdleL.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('doublejump', 'assets/NinjaFrog/DoubleJump.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('WallJump', 'assets/NinjaFrog/WallJump.png', { frameWidth: 32, frameHeight: 32 });
+            this.load.spritesheet('WallJumpL', 'assets/NinjaFrog/WallJumpL.png', { frameWidth: 32, frameHeight: 32 });
+
+
+        }
+
+        function create() {
+
+            this.physics.world.setBounds(0, 0, screenWidth + 1500, screenHeight);
+
+            // Créez un texte pour afficher l'accélération du joueur
+            this.positionText = this.add.text(16, 16, '', { fontSize: '20px', fill: '#FF0000' }).setDepth(2);
+            this.positionText.setScrollFactor(0); // Empêche le texte de défiler avec la caméra
+
+            this.positionText2 = this.add.text(16, 50, '', { fontSize: '20px', fill: '#FF0000' }).setDepth(2);
+            this.positionText2.setScrollFactor(0); // Empêche le texte de défiler avec la caméra
+
+            this.positionText3 = this.add.text(16, 84, 'score: 0', { fontSize: '20px', fill: '#FF0000' }).setDepth(2);
+            this.positionText3.setScrollFactor(0); // Empêche le texte de défiler avec la caméra
+
+            background = this.add.image(961, 540, 'back');
+
+            background2 = this.add.image(961, 0, 'back');
+
+            //  colision platform
+            platforms = this.physics.add.staticGroup();
+            wall = this.physics.add.staticGroup();
+            // spike = this.physics.add.staticGroup();
+            startflag = this.physics.add.staticGroup();
+
+            for (var y = 0; y <= screenHeight + 48; y += 48) {
+                wall.create(0, y, 'Padding').setScale(3).refreshBody();
+            }
+
+            for (var y = 0; y <= screenHeight / 1.1; y += 48) {
+                if (y > 48 + screenHeight / 2) {
+                    wall.create(48, y, 'wall').setScale(3).refreshBody();
+                } else if (y > screenHeight / 2) {
+                    wall.create(48, y, 'wallfin').setScale(3).refreshBody();
+                    wall.create(96, y, 'wallc').setScale(3).refreshBody();
+                } else {
+                    wall.create(48, y, 'Padding').setScale(3).refreshBody();
+                }
+                if (y <= screenHeight) {
+                    lastbloc = y;
+                }
+            }
+          /*  for (var y = 0; y <= screenHeight + 48; y += 48) {
+                wall.create(screenWidth + 1500, y, 'Padding').setScale(3).refreshBody();
+            }*/
+
+            for (var x = 0; x <= screenWidth + 1500; x += 48) {
+                wall.create(x, 0, 'Padding').setScale(3).refreshBody();
+            }
+
+            for (var x = 0; x <= screenWidth + 1500; x += 48) {
+                wall.create(x, lastbloc + 96, 'Padding').setScale(3).refreshBody();
+            }
+
+            for (var x = 48; x <= screenWidth; x += 48) {
+                if (x == 48) {
+                    platforms.create(x, lastbloc, 'angle').setScale(3).refreshBody();
+                } else if (x >= screenWidth) {
+                    platforms.create(x, lastbloc, 'coin').setScale(3).refreshBody();
+                } else {
+                    platforms.create(x, lastbloc, 'sol').setScale(3).refreshBody();
+                }
+
+            }
+            for (var x = 48; x <= screenWidth + 1500; x += 48) {
+                if (x >= screenWidth) {
+                    platforms.create(x, lastbloc + 48, 'sol').setScale(3).refreshBody();
+                } else {
+                    platforms.create(x, lastbloc + 48, 'Padding').setScale(3).refreshBody();
+                }
+
+            }
+
+            wall.create(96, 48, 'wallfin').setScale(3).refreshBody();
+
+            wall.create(144, 96, 'bloc').setScale(3).refreshBody();
+
+            wall.create(screenWidth / 1.8, lastbloc - 48, 'bloc').setScale(3).refreshBody();
+
+            for (var y = lastbloc - 48; y >= lastbloc - 192; y -= 48) {
+                wall.create(screenWidth / 1.3, y, 'bloc').setScale(3).refreshBody();
+            }
+
+            for (var y = 96; y <= screenHeight / 2; y += 48) {
+                wall.create(96, y, 'wall').setScale(3).refreshBody();
+            }
+
+            for (var x = 144; x <= screenWidth + 1500; x += 48) {
+                wall.create(x, 48, 'plafon').setScale(3).refreshBody();
+            }
+
+            for (var x = screenWidth + 480; x <= screenWidth + 720; x += 48) { 
+                if (x < screenWidth + 528) {
+
+                    for (var y = lastbloc; y >= lastbloc - 384; y -= 48) {
+                        if (y <= lastbloc - 350) {
+                            wall.create(x + 1, y, 'gherbe').setScale(3).refreshBody();
+                        }
+                        else {
+                            wall.create(x + 1, y, 'gterre').setScale(3).refreshBody();
+                        }
+                    }
+                }
+                else if (x > screenWidth + 672) {
+
+                    for (var y = lastbloc; y >= lastbloc - 384; y -= 48) {
+                        if (y <= lastbloc - 350) {
+                            wall.create(x, y, 'dherbe').setScale(3).refreshBody();
+                        }
+                        else {
+                            wall.create(x , y, 'dterre').setScale(3).refreshBody();
+                        }
+                    }
+                }
+                else {
+
+                    for (var y = lastbloc; y >= lastbloc - 384; y -= 48) {
+                        if (y <= lastbloc - 350) {
+                            wall.create(x, y, 'herbe').setScale(3).refreshBody();
+                        }
+                        else {
+                            wall.create(x, y, 'terre').setScale(3).refreshBody();
+                        }
+                    }
+                }
+
+            }
+
+          
+        
+
+
+
+            spike = this.physics.add.group({
+                key: 'spike',
+                repeat: 8,
+                setXY: { x: screenWidth + 48, y: lastbloc, stepX: 48 }
+            });
+            spike.children.iterate(function (spike) {
+                spike.setScale(3);
+                spike.body.moves = false;
+                spike.setSize(16, 5);
+                spike.setOffset(0, 11);
+            });
+
+            //spike.create(screenWidth + 48, lastbloc, 'spike').setScale(3).refreshBody();
+
+            startflag = this.physics.add.sprite(screenWidth / 3, lastbloc - 120, 'startflag').setScale(3);
+            // Réglez la taille de la hitbox sur la taille souhaitée
+            startflag.body.setSize(10, 34);
+            // Réglez le décalage de la hitbox (si nécessaire, c'est l'offset par rapport à la position de l'objet)
+            startflag.body.setOffset(10, 30);
+
+            CheckpointNoFlag = this.physics.add.sprite(screenWidth, lastbloc - 120, 'CheckpointNoFlag').setScale(3);
+            CheckpointNoFlag.body.setSize(10, 50);
+            CheckpointNoFlag.body.setOffset(19, 14);
+
+            Fruits = this.physics.add.group({
+                key: 'Bananas',
+                repeat: 5,
+                setXY: { x: screenWidth / 1.8, y: lastbloc - 65, stepX: 100 }
+            });
+
+            // parametre joueur
+            player = this.physics.add.sprite(screenWidth, screenHeight / 1.6).setScale(3);
+
+            player.setSize(12, 22);
+            player.setOffset(10, 10);
+
+            // bounce joueur
+            player.setBounce(0);
+            player.setCollideWorldBounds(true);
+
+
+            //  Collision
+            this.physics.add.collider(player, platforms);
+
+            this.physics.add.collider(startflag, platforms);
+
+            this.physics.add.collider(CheckpointNoFlag, platforms);
+
+            this.physics.add.collider(player, wall);
+
+            this.physics.add.overlap(player, spike, Spike, null, this);
+
+            this.physics.add.overlap(player, startflag, Start, null, this);
+
+            this.physics.add.overlap(player, CheckpointNoFlag, Checkpoint, null, this);
+
+            this.physics.add.overlap(player, Fruits, Recolte, null, this);
+
+
+
+
+            //  inputs
+            keys = this.input.keyboard.addKeys("Z,Q,S,D,R,SPACE");
+
+            // animations joueur
+            this.anims.create({
+                key: 'idle',
+                frames: this.anims.generateFrameNumbers('idle', { start: 0, end: 10 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'idleL',
+                frames: this.anims.generateFrameNumbers('idleL', { start: 0, end: 10 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'run',
+                frames: this.anims.generateFrameNumbers('run', { start: 0, end: 11 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'runL',
+                frames: this.anims.generateFrameNumbers('runL', { start: 0, end: 11 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'jump',
+                frames: this.anims.generateFrameNumbers('jump', { start: 0, end: 0 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'jumpL',
+                frames: this.anims.generateFrameNumbers('jumpL', { start: 0, end: 0 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'fall',
+                frames: this.anims.generateFrameNumbers('fall', { start: 0, end: 0 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'fallL',
+                frames: this.anims.generateFrameNumbers('fallL', { start: 0, end: 0 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'doublejump',
+                frames: this.anims.generateFrameNumbers('doublejump', { start: 0, end: 5 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'WallJump',
+                frames: this.anims.generateFrameNumbers('WallJump', { start: 0, end: 4 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'WallJumpL',
+                frames: this.anims.generateFrameNumbers('WallJumpL', { start: 0, end: 4 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'startMouv', // Clé unique pour l'animation
+                frames: this.anims.generateFrameNumbers('startMouv', { start: 0, end: 16 }),
+                frameRate: 15, // Vitesse de l'animation en images par seconde
+                repeat: 1 // -1 pour une boucle infinie, sinon vous pouvez définir un nombre spécifique de répétitions
+            });
+
+            this.anims.create({
+                key: 'CheckpointFlagOut', // Clé unique pour l'animation
+                frames: this.anims.generateFrameNumbers('CheckpointFlagOut', { start: 0, end: 25 }),
+                frameRate: 15, // Vitesse de l'animation en images par seconde
+                repeat: 0 // -1 pour une boucle infinie, sinon vous pouvez définir un nombre spécifique de répétitions
+            });
+
+            this.anims.create({
+                key: 'CheckpointFlagIdle', // Clé unique pour l'animation
+                frames: this.anims.generateFrameNumbers('CheckpointFlagIdle', { start: 0, end: 9 }),
+                frameRate: 15, // Vitesse de l'animation en images par seconde
+                repeat: -1 // -1 pour une boucle infinie, sinon vous pouvez définir un nombre spécifique de répétitions
+            });
+
+            this.anims.create({
+                key: 'Appearing', // Clé unique pour l'animation
+                frames: this.anims.generateFrameNumbers('Appearing', { start: 0, end: 6 }),
+                frameRate: 8, // Vitesse de l'animation en images par seconde
+                repeat: 0 // -1 pour une boucle infinie, sinon vous pouvez définir un nombre spécifique de répétitions
+            });
+
+            this.anims.create({
+                key: 'Desappearing', // Clé unique pour l'animation
+                frames: this.anims.generateFrameNumbers('Desappearing', { start: 0, end: 6 }),
+                frameRate: 8, // Vitesse de l'animation en images par seconde
+                repeat: 0 // -1 pour une boucle infinie, sinon vous pouvez définir un nombre spécifique de répétitions
+            });
+
+            this.anims.create({
+                key: 'Bananas',
+                frames: this.anims.generateFrameNumbers('Bananas', { start: 0, end: 16 }),
+                frameRate: 15,
+                repeat: -1
+            });
+
+            Fruits.children.iterate(function (Fruits) {
+                Fruits.setScale(2);
+                Fruits.body.moves = false;
+                Fruits.setSize(15, 15);
+                Fruits.setOffset(9, 9);
+                Fruits.play('Bananas');
+            });
+
+            this.anims.create({
+                key: 'Collected', // Clé unique pour l'animation
+                frames: this.anims.generateFrameNumbers('Collected', { start: 0, end: 5 }),
+                frameRate: 25, // Vitesse de l'animation en images par seconde
+                repeat: 0 // -1 pour une boucle infinie, sinon vous pouvez définir un nombre spécifique de répétitions
+            });
+
+
+
+
+
+            // Définissez le décalage pour centrer le joueur sur l'écran
+            this.cameras.main.setFollowOffset(0, 0);
+
+            // Définissez les limites de la caméra pour le monde
+            this.cameras.main.setBounds(0, 0, screenWidth + 1500, screenHeight);
+
+            // Faites en sorte que la caméra suive le joueur
+            this.cameras.main.startFollow(player, true, 0.05, 0, 0, 120);
+
+        }
+
+        function update() {
+
+
+
+
+
+            this.positionText2.setText('Position du joueur : x=' + player.x.toFixed(1) + ', y=' + player.y.toFixed(1) + lastbloc);
+
+            this.positionText.setText('Accélération du joueur : x=' + player.body.velocity.x.toFixed(1) + ', y=' + player.body.velocity.y.toFixed(1));
+
+            if (appearing) {
+                appearing = false;
+                player.setVisible(false);
+                player.body.moves = false;
+                const Appearing = this.add.sprite(player.x, player.y, 'Appearing'); // Créez l'objet animé à l'aide du spritesheet
+                Appearing.setScale(3);
+                Appearing.play('Appearing'); // Jouez l'animation
+                Appearing.on('animationcomplete', () => {
+                    player.setVisible(true);
+                    player.body.moves = true;
+                    Appearing.destroy();
+                });
+            }
+
+            if (gameOver) {
+                return;
+            }
+
+
+            if (player.body.touching.down) {
+                doublejump = true;
+            }
+
+
+            if (keys.Q.isDown) {
+                playerIsInsideHitbox = false;
+                player.setVelocityX(-h);
+                player.anims.play('runL', true);
+                Left = true;
+            }
+            else if (keys.D.isDown) {
+                playerIsInsideHitbox = false;
+                player.setVelocityX(h);
+                player.anims.play('run', true);
+                Left = false;
+            }
+
+            else {
+
+                player.setVelocityX(0);
+                if (Left == false) {
+                    player.anims.play('idle', true);
+                }
+                else
+                    player.anims.play('idleL', true);
+            }
+            if (keys.Z.isDown && player.body.touching.down) {
+                player.setVelocityY(-v);
+            }
+            else if (keys.S.isDown && !player.body.touching.down) {
+                player.setVelocityY(v);
+                if (Left == false) {
+                    player.anims.play('fall', true);
+                }
+                else
+                    player.anims.play('fallL', true);
+            }
+            if (!player.body.touching.down) {
+                if (player.body.blocked.left && keys.Q.isDown) {
+                    doublejump = true;
+                    player.setVelocityY(wallride);
+                    player.anims.play('WallJumpL', true, 1);
+
+                } else if (player.body.blocked.right && keys.D.isDown) {
+                    doublejump = true;
+                    player.setVelocityY(wallride);
+                    player.anims.play('WallJump', true, 1);
+                }
+                else if (keys.SPACE.isDown && doublejump == true ) {
+                    player.anims.play('doublejump', true, 1);
+                    player.setVelocityY(-v);
+                    doublejump = false;
+
+                }
+                else if (player.body.velocity.y < 50) {
+                    if (Left == false) {
+                        
+                        player.anims.play('jump', true);
+                    } else {
+                        player.anims.play('jumpL', true);
+                    }
+                } else {
+                    if (Left == false) {
+                        player.anims.play('fall', true);
+                    } else {
+                        player.anims.play('fallL', true);
+                    }
+                }
+            }
+
+            // Faites bouger le fond vers le bas
+            background.y += 1; // Vous pouvez ajuster cette valeur pour contrôler la vitesse du mouvement
+
+            // Si le fond dépasse l'écran en bas, réinitialisez sa position pour créer un effet de boucle
+            if (background.y > game.config.height) {
+                background.y = -540;
+            }
+
+            // Faites bouger le fond vers le bas
+            background2.y += 1; // Vous pouvez ajuster cette valeur pour contrôler la vitesse du mouvement
+
+            // Si le fond dépasse l'écran en bas, réinitialisez sa position pour créer un effet de boucle
+            if (background2.y > game.config.height + 540) {
+                background2.y = 0;
+            }
+
+
+        }
+
+        function Spike(player, spike) {
+            player.setVisible(false);
+            player.body.moves = false;
+            // Mettre en pause la scène
+            const Desappearing = this.add.sprite(player.x, player.y, 'Desappearing'); // Créez l'objet animé à l'aide du spritesheet
+            Desappearing.setScale(3);
+            Desappearing.play('Desappearing'); // Jouez l'animation
+
+            Desappearing.on('animationcomplete', () => {
+                Desappearing.destroy()
+                // Reprendre la scène après un certain délai (par exemple 2 secondes)
+                player.setVisible(true);
+                player.body.moves = true;
+                appearing = true;
+                player.x = respownX;
+                player.y = respownY;
+            });
+
+        }
+
+        function Start(player, startflag) {
+            if (flagCollider && !playerIsInsideHitbox) {
+                playerIsInsideHitbox = true;
+                flagCollider = false;
+                startflag.setVisible(false);
+
+                const startMouv = this.add.sprite(screenWidth / 3, lastbloc - 120, 'startMouv'); // Créez l'objet animé à l'aide du spritesheet
+                startMouv.setScale(3);
+                startMouv.play('startMouv'); // Jouez l'animation
+
+                startMouv.on('animationcomplete', () => {
+                    startflag.setVisible(true);
+                    startMouv.destroy();
+                    flagCollider = true;
+
+                });
+
+
+            }
+
+
+        }
+
+        function Checkpoint(player, CheckpointNoFlag) {
+            respownX = screenWidth;
+            respownY = lastbloc - 120;
+            if (flagCollider) {
+                flagCollider = false;
+                const CheckpointFlagOut = this.add.sprite(screenWidth, lastbloc - 120, 'CheckpointFlagOut'); // Créez l'objet animé à l'aide du spritesheet
+                CheckpointFlagOut.setScale(3);
+                CheckpointNoFlag.destroy();
+                CheckpointFlagOut.play('CheckpointFlagOut'); // Jouez l'animation
+
+                CheckpointFlagOut.on('animationcomplete', () => {
+                    const CheckpointFlagIdle = this.add.sprite(screenWidth, lastbloc - 120, 'CheckpointFlagIdle'); // Créez l'objet animé à l'aide du spritesheet
+                    CheckpointFlagIdle.setScale(3);
+                    CheckpointFlagOut.destroy();
+                    CheckpointFlagIdle.play('CheckpointFlagIdle'); // Jouez l'animation
+
+                    flagCollider = true;
+                });
+            }
+
+        }
+
+        function Recolte(player, Fruits) {
+            Fruits.destroy();
+            score += 1;
+            this.positionText3.setText('score: ' + score);
+            const Collected = this.add.sprite(player.x, player.y, 'Collected'); // Créez l'objet animé à l'aide du spritesheet
+            Collected.setScale(3);
+            Collected.play('Collected');
+            Collected.on('animationcomplete', () => {
+                Collected.destroy();
+            });
+        }
+
+
+
+
+
+
+    </script>
+
+</body>
+
+</html>
